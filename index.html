@@ -128,12 +128,16 @@
       <!-- VENTAS TAB -->
       <div id="ventasTab" class="tabPanel hidden">
         <h2>Ventas</h2>
-        <div class="grid cols-2">
-          <div class="section">
+        <div class="grid cols-2 ventas-grid">
+          <div class="section ventas-form">
             <h3 style="margin-top:0">Registrar venta</h3>
             <div class="grid cols-1">
               <label>Producto</label>
-              <select id="saleProduct"></select>
+              <!-- Autocomplete wrapper y sugerencias -->
+              <div class="autocomplete-wrapper" style="position:relative;">
+                <input id="saleProduct" class="input" placeholder="Empieza a escribir para buscar..." autocomplete="off" />
+                <div id="saleSuggestions" class="suggestions hidden" role="listbox" aria-label="Sugerencias de producto"></div>
+              </div>
               <label style="margin-top:8px">Cantidad</label>
               <input id="saleQty" class="input" type="number" step="1" placeholder="1" />
               <label style="margin-top:8px">Precio de venta por unidad (S/)</label>
@@ -141,12 +145,12 @@
               <label style="margin-top:8px">Fecha</label>
               <input id="saleDate" class="input" type="date" />
             </div>
-            <div class="toolbar" style="margin-top:12px">
+            <div class="toolbar ventas-toolbar" style="margin-top:12px">
               <button id="btnSale" class="btn primary">Guardar venta</button>
               <span id="saleMsg" class="notice"></span>
             </div>
           </div>
-          <div class="section">
+          <div class="section ventas-stats">
             <div class="toolbar">
               <div class="pill"><span>🧾</span>Operaciones: <span id="kpiVentas" class="value" style="margin-left:6px">0</span></div>
               <div class="pill"><span>💰</span>Ingresos: <span id="kpiIngresos" class="value" style="margin-left:6px">S/ 0.00</span></div>
@@ -179,22 +183,37 @@
         <div class="grid cols-2">
           <div class="section">
             <h3 style="margin-top:0">Ingresos vs Costo (últimos 30 días)</h3>
-            <canvas id="chartLine" height="140"></canvas>
+            <div class="chart-square">
+              <canvas id="chartLine"></canvas>
+            </div>
           </div>
           <div class="section">
             <h3 style="margin-top:0">Rendimiento por producto</h3>
-            <div class="notice">Flecha <span class="arrow up">▲</span> verde: sube / <span class="arrow down">▼</span> roja: baja / <span class="arrow flat">—</span> amarilla: se mantiene.</div>
-            <div id="scoreList" style="margin-top:10px; display:flex; flex-direction:column; gap:8px"></div>
+            <div class="notice">Verde: rentable · Amarillo: se mantiene · Rojo: pérdida</div>
+            <!-- Tabla de rendimiento -->
+            <div style="margin-top:10px; overflow:auto">
+              <table id="rendimientoProductoTable">
+                <thead>
+                  <tr>
+                    <th>Producto</th>
+                    <th>Ingresos</th>
+                    <th>Costos</th>
+                    <th>Ganancia</th>
+                    <th>Rentabilidad</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- NUEVA: REPORTE TRIBUTARIO TAB -->
+      <!-- REPORTE TRIBUTARIO TAB (NRUS) -->
       <div id="tributarioTab" class="tabPanel hidden">
         <h2>Reporte Tributario (NRUS)</h2>
 
         <div class="grid cols-2">
-          <!-- MENSUAL -->
           <div class="section">
             <div id="rtMonthly" class="statusBox">
               <div class="statusDot"></div>
@@ -209,7 +228,6 @@
             </div>
           </div>
 
-          <!-- ANUAL -->
           <div class="section">
             <div id="rtYearly" class="statusBox">
               <div class="statusDot"></div>
@@ -224,7 +242,6 @@
             </div>
           </div>
 
-          <!-- CATEGORÍA -->
           <div class="section" style="grid-column: span 2">
             <h3 style="margin:0 0 8px 0">Categoría NRUS correspondiente (mensual)</h3>
             <div class="nrusCard">
@@ -237,12 +254,11 @@
           </div>
         </div>
 
-        <!-- SELLO + REFERENCIA SUNAT -->
         <div class="legalBox">
           <div class="sunat-seal" aria-hidden="true"></div>
           <div class="text">
             Información basada en el <strong>Nuevo Régimen Único Simplificado (NRUS)</strong> – SUNAT.<br/>
-            Fuente oficial: <a href="https://emprender.sunat.gob.pe/ruc/regimenes-tributarios-mype/nuevo-regimen-unico-simplificado-nuevo-rus" target="_blank" rel="noopener">SUNAT – Emprender: NRUS</a> · Límites referenciales: S/ 8,000 mensual y S/ 96,000 anual; categorías NRUS Cat. 1 (≤ 5,000 → S/ 20) y Cat. 2 (> 5,000 y ≤ 8,000 → S/ 50).
+            Fuente oficial: <a href="https://emprender.sunat.gob.pe/ruc/regimenes-tributarios-mype/nuevo-regimen-unico-simplificado-nuevo-rus" target="_blank" rel="noopener">SUNAT – Emprender: NRUS</a>.
           </div>
         </div>
       </div>
