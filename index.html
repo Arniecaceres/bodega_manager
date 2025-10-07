@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BodegaManager – Monitoreo de Bodegas</title>
+  <!-- Librerías desde CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="brand">
+        <div class="logo"></div>
+        <div>
+          <h1>BodegaManager</h1>
+          <div class="tag">Monitoreo y soporte para bodegas minoristas</div>
+        </div>
+      </div>
+      <div id="userBox" class="tag"></div>
+    </header>
+
+    <!-- LOGIN -->
+    <section id="loginView" class="login card">
+      <h2>Iniciar sesión</h2>
+      <p class="notice">Debajo indicamos: <strong>Protegemos su privacidad y sus datos.</strong> Sus credenciales son proporcionadas por el administrador.</p>
+      <div class="grid cols-2" style="margin-top:12px">
+        <div class="section">
+          <div class="grid cols-1">
+            <label>Usuario</label>
+            <input id="loginUser" class="input" autocomplete="username" placeholder="ej. bodega_central" />
+            <label style="margin-top:10px">Contraseña</label>
+            <input id="loginPass" type="password" class="input" autocomplete="current-password" placeholder="••••••" />
+          </div>
+          <div class="toolbar" style="margin-top:14px">
+            <button id="btnLogin" class="btn primary">Entrar</button>
+            <span id="loginMsg" class="notice"></span>
+          </div>
+        </div>
+        <div class="section">
+          <h3 style="margin-top:0">Nota para el administrador</h3>
+          <p class="notice">Las cuentas son administradas por usted. Puede preconfigurarlas y/o gestionarlas desde el panel “Admin”. Los datos de cada usuario se aíslan por completo.</p>
+          <div class="pill"><span>🔐</span>Privacidad y datos protegidos</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DASHBOARD -->
+    <section id="dashboard" class="dashboard card hidden">
+      <div class="tabs">
+        <button class="tab active" data-tab="stockTab">Stock</button>
+        <button class="tab" data-tab="ventasTab">Ventas</button>
+        <button class="tab" data-tab="graficosTab">Gráficos</button>
+        <button class="tab" data-tab="tributarioTab">Reporte Tributario</button>
+        <button class="tab" data-tab="exportarTab">Exportar</button>
+        <button class="tab" data-tab="adminTab">Admin</button>
+        <div class="right toolbar">
+          <button id="btnLogout" class="btn flat">Cerrar sesión</button>
+        </div>
+      </div>
+
+      <!-- STOCK TAB -->
+      <div id="stockTab" class="tabPanel">
+        <h2>Stock de <span id="ownerName">—</span></h2>
+        <div class="grid cols-3">
+          <div class="section">
+            <h3 style="margin-top:0">Agregar producto</h3>
+            <div class="grid cols-1">
+              <label>Nombre</label>
+              <input id="pName" class="input" placeholder="Arroz 5kg" />
+              <label style="margin-top:8px">SKU / Código</label>
+              <input id="pSku" class="input" placeholder="ARZ-5KG" />
+              <label style="margin-top:8px">Categoría</label>
+              <input id="pCat" class="input" placeholder="Granos" />
+              <label style="margin-top:8px">Costo por unidad (S/)</label>
+              <input id="pCost" type="number" step="0.01" class="input" placeholder="8.50" />
+              <label style="margin-top:8px">Precio al consumidor (S/)</label>
+              <input id="pPrice" type="number" step="0.01" class="input" placeholder="10.90" />
+              <label style="margin-top:8px">Stock (unidades)</label>
+              <input id="pQty" type="number" step="1" class="input" placeholder="20" />
+              <label style="margin-top:8px">Fecha de vencimiento</label>
+              <input id="pExp" type="date" class="input" />
+            </div>
+            <div class="toolbar" style="margin-top:12px">
+              <button id="btnAdd" class="btn success">Agregar</button>
+              <button id="btnClear" class="btn ghost">Limpiar</button>
+              <span class="notice">El costo total se calcula como <strong>stock × costo por unidad</strong>.</span>
+            </div>
+          </div>
+          <div class="section" style="grid-column: span 2">
+            <div class="toolbar">
+              <div class="pill"><span>📦</span>Productos: <span id="kpiItems" class="value" style="margin-left:6px">0</span></div>
+              <div class="pill"><span>💸</span>Costo total: <span id="kpiCosto" class="value" style="margin-left:6px">S/ 0.00</span></div>
+              <div class="pill"><span>⏰</span>Alertas FV: <span id="kpiAlerts" class="value" style="margin-left:6px">0</span></div>
+              <div class="right toolbar">
+                <input id="search" class="input" placeholder="Buscar por nombre o código" />
+              </div>
+            </div>
+            <div style="overflow:auto; margin-top:10px">
+              <table id="stockTable">
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>SKU</th>
+                    <th>Cat.</th>
+                    <th>U. Costo</th>
+                    <th>Precio</th>
+                    <th>Stock</th>
+                    <th>Costo total</th>
+                    <th>Vence</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <div style="margin-top:12px">
+              <h3 style="margin: 0 0 6px 0">Alertas de vencimiento</h3>
+              <div id="alerts" class="alert-list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VENTAS TAB -->
+      <div id="ventasTab" class="tabPanel hidden">
+        <h2>Ventas</h2>
+        <div class="grid cols-2 ventas-grid">
+          <div class="section ventas-form">
+            <h3 style="margin-top:0">Registrar venta</h3>
+            <div class="grid cols-1">
+              <label>Producto</label>
+              <!-- Autocomplete wrapper y sugerencias -->
+              <div class="autocomplete-wrapper" style="position:relative;">
+                <input id="saleProduct" class="input" placeholder="Empieza a escribir para buscar..." autocomplete="off" />
+                <div id="saleSuggestions" class="suggestions hidden" role="listbox" aria-label="Sugerencias de producto"></div>
+              </div>
+              <label style="margin-top:8px">Cantidad</label>
+              <input id="saleQty" class="input" type="number" step="1" placeholder="1" />
+              <label style="margin-top:8px">Precio de venta por unidad (S/)</label>
+              <input id="salePrice" class="input" type="number" step="0.01" placeholder="10.90" />
+              <label style="margin-top:8px">Fecha</label>
+              <input id="saleDate" class="input" type="date" />
+            </div>
+            <div class="toolbar ventas-toolbar" style="margin-top:12px">
+              <button id="btnSale" class="btn primary">Guardar venta</button>
+              <span id="saleMsg" class="notice"></span>
+            </div>
+          </div>
+          <div class="section ventas-stats">
+            <div class="toolbar">
+              <div class="pill"><span>🧾</span>Operaciones: <span id="kpiVentas" class="value" style="margin-left:6px">0</span></div>
+              <div class="pill"><span>💰</span>Ingresos: <span id="kpiIngresos" class="value" style="margin-left:6px">S/ 0.00</span></div>
+              <div class="pill"><span>🧮</span>Utilidad: <span id="kpiUtilidad" class="value" style="margin-left:6px">S/ 0.00</span></div>
+            </div>
+            <div style="overflow:auto; margin-top:10px">
+              <table id="salesTable">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Producto</th>
+                    <th>Cant.</th>
+                    <th>P. Venta</th>
+                    <th>Ingresos</th>
+                    <th>Costo</th>
+                    <th>Utilidad</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GRÁFICOS TAB -->
+      <div id="graficosTab" class="tabPanel hidden">
+        <h2>Gráficos y evaluación</h2>
+        <div class="grid cols-2">
+          <div class="section">
+            <h3 style="margin-top:0">Ingresos vs Costo (últimos 30 días)</h3>
+            <div class="chart-square">
+              <canvas id="chartLine"></canvas>
+            </div>
+          </div>
+          <div class="section">
+            <h3 style="margin-top:0">Rendimiento por producto</h3>
+            <div class="notice">Verde: rentable · Amarillo: se mantiene · Rojo: pérdida</div>
+            <!-- Tabla de rendimiento -->
+            <div style="margin-top:10px; overflow:auto">
+              <table id="rendimientoProductoTable">
+                <thead>
+                  <tr>
+                    <th>Producto</th>
+                    <th>Ingresos</th>
+                    <th>Costos</th>
+                    <th>Ganancia</th>
+                    <th>Rentabilidad</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- REPORTE TRIBUTARIO TAB (NRUS) -->
+      <div id="tributarioTab" class="tabPanel hidden">
+        <h2>Reporte Tributario (NRUS)</h2>
+
+        <div class="grid cols-2">
+          <div class="section">
+            <div id="rtMonthly" class="statusBox">
+              <div class="statusDot"></div>
+              <div class="statusBody">
+                <h4>Control mensual – Límite NRUS: <strong>S/ 8,000</strong></h4>
+                <div class="big" id="rtMonthlyAmount">S/ 0.00</div>
+                <div class="mini">
+                  <span id="rtMonthlyMsg">Sin movimientos en el mes.</span><br/>
+                  <span id="rtMonthlyLeft"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div id="rtYearly" class="statusBox">
+              <div class="statusDot"></div>
+              <div class="statusBody">
+                <h4>Control anual – Límite NRUS: <strong>S/ 96,000</strong></h4>
+                <div class="big" id="rtYearlyAmount">S/ 0.00</div>
+                <div class="mini">
+                  <span id="rtYearlyMsg">Sin movimientos en el año.</span><br/>
+                  <span id="rtYearlyLeft"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section" style="grid-column: span 2">
+            <h3 style="margin:0 0 8px 0">Categoría NRUS correspondiente (mensual)</h3>
+            <div class="nrusCard">
+              <div>
+                <div id="rtNRUSCat" class="nrusBadge">—</div>
+                <div class="mini" id="rtNRUSNote" style="margin-top:6px">Se calcula según ventas del mes.</div>
+              </div>
+              <div class="pill"><span>ℹ️</span><span id="rtNRUSHelp">Cat. 1: ≤ S/ 5,000 → cuota S/ 20 · Cat. 2: > S/ 5,000 y ≤ S/ 8,000 → cuota S/ 50</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="legalBox">
+          <div class="sunat-seal" aria-hidden="true"></div>
+          <div class="text">
+            Información basada en el <strong>Nuevo Régimen Único Simplificado (NRUS)</strong> – SUNAT.<br/>
+            Fuente oficial: <a href="https://emprender.sunat.gob.pe/ruc/regimenes-tributarios-mype/nuevo-regimen-unico-simplificado-nuevo-rus" target="_blank" rel="noopener">SUNAT – Emprender: NRUS</a>.
+          </div>
+        </div>
+      </div>
+
+      <!-- EXPORTAR TAB -->
+      <div id="exportarTab" class="tabPanel hidden">
+        <h2>Exportar</h2>
+        <div class="section">
+          <div class="toolbar">
+            <button id="btnExportStock" class="btn success">Descargar Stock en Excel</button>
+            <button id="btnExportSales" class="btn success">Descargar Ventas en Excel</button>
+            <span class="notice">Se descargará un archivo .xlsx con su información.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ADMIN TAB -->
+      <div id="adminTab" class="tabPanel hidden">
+        <h2>Admin – Cuentas de usuarios</h2>
+        <div class="section">
+          <p class="notice">Aquí puede preconfigurar usuarios y contraseñas. <strong>Solo visible para el administrador</strong> si inicia con el usuario <code>admin</code>.</p>
+          <div class="grid cols-2">
+            <div>
+              <h3 style="margin-top:0">Crear usuario</h3>
+              <input id="newU" class="input" placeholder="usuario" />
+              <input id="newP" type="password" class="input" placeholder="contraseña" style="margin-top:8px" />
+              <div class="toolbar" style="margin-top:10px">
+                <button id="btnCreateUser" class="btn primary">Crear</button>
+                <span id="adminMsg" class="notice"></span>
+              </div>
+            </div>
+            <div>
+              <h3 style="margin-top:0">Usuarios existentes</h3>
+              <div id="usersList" class="notice"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <div class="footer">© <span id="year"></span> BodegaManager. Interfaz translúcida y llamativa para emprendedores.</div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
